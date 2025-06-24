@@ -1,0 +1,11 @@
+# 忽略所有 Docker 本地构建文件（如果有）
+*.tar
+*.log
+
+# 忽略 IDE 配置
+.vscode/
+.idea/
+
+# 忽略系统文件
+.DS_Store
+Thumbs.db
