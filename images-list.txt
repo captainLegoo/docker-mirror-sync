@@ -1,2 +1,2 @@
-mongo
-phpmyadmin:5.2.2
+jenkins:2.439
+portainer-ce:latest
