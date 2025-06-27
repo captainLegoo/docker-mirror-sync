@@ -2,8 +2,6 @@ name: Sync Docker Images to Any Container Registry
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 3 * * *'
   push:
     paths:
       - images-list.txt
@@ -21,25 +19,40 @@ jobs:
 
       - name: Sync Docker Images
         run: |
-          echo "=== Contents of images-list.txt ==="
-          cat images-list.txt || echo "⚠️ File not found!"
-          
+          MAX_PARALLEL=4  # 并发数限制，可根据需要调整
+          JOBS=0
+      
           echo "=== Start syncing ==="
           
-          while IFS= read -r image || [[ -n "$image" ]]; do
-            echo "Read raw line: '$image'" | od -c   # debug 字符显示（排查 \r）
-            [[ -z "$image" || "$image" =~ ^# ]] && { echo "Skipping empty/comment"; continue; }
-          
+          sync_image() {
+            local image="$1"
+      
             [[ "$image" != *:* ]] && image="${image}:latest"
-          
             name_with_tag=$(basename "$image")
             name=${name_with_tag%%:*}
             tag=${name_with_tag#*:}
             target="${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/$name:$tag"
-          
+      
             echo "==> Syncing $image → $target"
-            docker pull "$image" || echo "❌ Failed to pull $image"
-            docker tag "$image" "$target"
-            docker push "$target" || echo "❌ Failed to push $target"
+      
+            docker pull "$image" && \
+            docker tag "$image" "$target" && \
+            docker push "$target" && \
+            echo "✅ Done: $image" || \
+            echo "❌ Failed: $image"
+          }
+      
+          while IFS= read -r image || [[ -n "$image" ]]; do
+            # 去除空行和注释
+            [[ -z "$image" || "$image" =~ ^# ]] && continue
+      
+            sync_image "$image" &
+      
+            ((JOBS++))
+            if [[ "$JOBS" -ge "$MAX_PARALLEL" ]]; then
+              wait -n  # 等待任意一个任务完成
+              ((JOBS--))
+            fi
           done < images-list.txt
-
+      
+          wait  # 等待所有剩余任务完成
