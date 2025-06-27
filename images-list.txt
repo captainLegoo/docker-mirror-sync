@@ -1,2 +1,6 @@
-jenkins:2.439
-portainer-ce:latest
+jenkins/jenkins:slim-jdk21
+ollama/ollama:0.9.3
+openjdk:26-jdk-oraclelinux9
+mongo:windowsservercore-ltsc2022
+mcp/sqlite:latest
+tomcat:9.0.106-jdk8-corretto
