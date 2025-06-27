@@ -17,15 +17,17 @@ jobs:
       - name: Login to Target Registry
         run: echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ secrets.ACR_REGISTRY }}" -u "${{ secrets.ACR_USERNAME }}" --password-stdin
 
-      - name: Sync Docker Images
+      - name: Sync Docker Images in Parallel
         run: |
-          MAX_PARALLEL=4  # 并发数限制，可根据需要调整
+          MAX_PARALLEL=4
           JOBS=0
+          FAILURES=()
       
           echo "=== Start syncing ==="
-          
+      
           sync_image() {
             local image="$1"
+            echo "::group::⏳ Syncing $image"
       
             [[ "$image" != *:* ]] && image="${image}:latest"
             name_with_tag=$(basename "$image")
@@ -33,20 +35,62 @@ jobs:
             tag=${name_with_tag#*:}
             target="${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/$name:$tag"
       
-            echo "==> Syncing $image → $target"
+            echo "Pulling $image..."
+            if ! docker pull "$image"; then
+              echo "❌ Failed to pull $image"
+              FAILURES+=("pull:$image")
+              echo "::endgroup::"
+              return 1
+            fi
       
-            docker pull "$image" && \
-            docker tag "$image" "$target" && \
-            docker push "$target" && \
-            echo "✅ Done: $image" || \
-            echo "❌ Failed: $image"
+            echo "Tagging $image → $target..."
+            if ! docker tag "$image" "$target"; then
+              echo "❌ Failed to tag $image"
+              FAILURES+=("tag:$image")
+              echo "::endgroup::"
+              return 1
+            fi
+      
+            echo "Pushing $target..."
+            if ! docker push "$target"; then
+              echo "❌ Failed to push $target"
+              FAILURES+=("push:$image")
+              echo "::endgroup::"
+              return 1
+            fi
+      
+            echo "✅ Done: $image"
+            echo "::endgroup::"
           }
       
+          export -f sync_image
+      
           while IFS= read -r image || [[ -n "$image" ]]; do
-            # 去除空行和注释
             [[ -z "$image" || "$image" =~ ^# ]] && continue
       
             sync_image "$image" &
+            ((JOBS++))
+      
+            if [[ "$JOBS" -ge "$MAX_PARALLEL" ]]; then
+              wait -n
+              ((JOBS--))
+            fi
+          done < images-list.txt
+      
+          wait  # 等待所有任务结束
+      
+          echo "=== All syncs completed ==="
+      
+          if [[ "${#FAILURES[@]}" -gt 0 ]]; then
+            echo "❌ The following images failed:"
+            for f in "${FAILURES[@]}"; do
+              echo "- $f"
+            done
+            exit 1
+          else
+            echo "✅ All images synced successfully."
+          fi
+
       
             ((JOBS++))
             if [[ "$JOBS" -ge "$MAX_PARALLEL" ]]; then
