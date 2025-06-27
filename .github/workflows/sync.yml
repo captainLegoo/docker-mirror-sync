@@ -19,6 +19,7 @@ jobs:
 
       - name: Sync Docker Images in Parallel
         run: |
+          # 并发限制
           MAX_PARALLEL=4
           JOBS=0
           FAILURES=()
@@ -29,7 +30,9 @@ jobs:
             local image="$1"
             echo "::group::⏳ Syncing $image"
       
+            # 自动补全 tag
             [[ "$image" != *:* ]] && image="${image}:latest"
+      
             name_with_tag=$(basename "$image")
             name=${name_with_tag%%:*}
             tag=${name_with_tag#*:}
@@ -38,23 +41,20 @@ jobs:
             echo "Pulling $image..."
             if ! docker pull "$image"; then
               echo "❌ Failed to pull $image"
-              FAILURES+=("pull:$image")
               echo "::endgroup::"
               return 1
             fi
       
-            echo "Tagging $image → $target..."
+            echo "Tagging → $target"
             if ! docker tag "$image" "$target"; then
               echo "❌ Failed to tag $image"
-              FAILURES+=("tag:$image")
               echo "::endgroup::"
               return 1
             fi
       
-            echo "Pushing $target..."
+            echo "Pushing to $target..."
             if ! docker push "$target"; then
               echo "❌ Failed to push $target"
-              FAILURES+=("push:$image")
               echo "::endgroup::"
               return 1
             fi
@@ -65,38 +65,8 @@ jobs:
       
           export -f sync_image
       
-          while IFS= read -r image || [[ -n "$image" ]]; do
-            [[ -z "$image" || "$image" =~ ^# ]] && continue
+          # 使用 xargs 控制并发执行，每行作为参数传入函数
+          grep -vE '^\s*#|^\s*$' images-list.txt | \
+            xargs -I {} -P "$MAX_PARALLEL" bash -c 'sync_image "$@"' _ {}
       
-            sync_image "$image" &
-            ((JOBS++))
-      
-            if [[ "$JOBS" -ge "$MAX_PARALLEL" ]]; then
-              wait -n
-              ((JOBS--))
-            fi
-          done < images-list.txt
-      
-          wait  # 等待所有任务结束
-      
-          echo "=== All syncs completed ==="
-      
-          if [[ "${#FAILURES[@]}" -gt 0 ]]; then
-            echo "❌ The following images failed:"
-            for f in "${FAILURES[@]}"; do
-              echo "- $f"
-            done
-            exit 1
-          else
-            echo "✅ All images synced successfully."
-          fi
-
-      
-            ((JOBS++))
-            if [[ "$JOBS" -ge "$MAX_PARALLEL" ]]; then
-              wait -n  # 等待任意一个任务完成
-              ((JOBS--))
-            fi
-          done < images-list.txt
-      
-          wait  # 等待所有剩余任务完成
+          echo "=== All tasks finished ==="
