@@ -1,4 +1,4 @@
-name: Sync Docker Images to Any Container Registry
+name: Sync Docker Images to ACR (Concurrent)
 
 on:
   workflow_dispatch:

@@ -1,0 +1,39 @@
+name: Sync Docker Images to ACR (Backup)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Target Registry
+        run: echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ secrets.ACR_REGISTRY }}" -u "${{ secrets.ACR_USERNAME }}" --password-stdin
+
+      - name: Sync Docker Images
+        run: |
+          echo "=== Contents of images-list.txt ==="
+          cat images-list.txt || echo "⚠️ File not found!"
+          
+          echo "=== Start syncing ==="
+          
+          while IFS= read -r image || [[ -n "$image" ]]; do
+            echo "Read raw line: '$image'" | od -c   # debug 字符显示（排查 \r）
+            [[ -z "$image" || "$image" =~ ^# ]] && { echo "Skipping empty/comment"; continue; }
+          
+            [[ "$image" != *:* ]] && image="${image}:latest"
+          
+            name_with_tag=$(basename "$image")
+            name=${name_with_tag%%:*}
+            tag=${name_with_tag#*:}
+            target="${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/$name:$tag"
+          
+            echo "==> Syncing $image → $target"
+            docker pull "$image" || echo "❌ Failed to pull $image"
+            docker tag "$image" "$target"
+            docker push "$target" || echo "❌ Failed to push $target"
+          done < images-list.txt
