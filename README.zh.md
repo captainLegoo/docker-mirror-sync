@@ -8,6 +8,8 @@
 
 ---
 
+
+
 ## ✨ 功能特点
 
 - 📥 支持自动拉取并转存国外镜像（DockerHub、GHCR、Quay 等）
@@ -16,6 +18,8 @@
 - 🧩 兼容任意 OCI 兼容镜像源
 
 ---
+
+
 
 ## 📁 项目结构
 
@@ -30,6 +34,18 @@
 
 
 ## 🧾 使用方法
+
+### 🌀 请先 Fork 本仓库
+
+使用本项目前，请先将其 **Fork 到你自己的 GitHub 账户或组织**：
+
+1. 点击右上角的 **Fork** 按钮
+2. 选择你的账户或组织作为目标
+3. Fork 后，可自由修改 `images-list.txt` 和设置 Secrets
+
+> ℹ️ 注意：只有 Fork 到你自己名下后，GitHub Actions（例如定时任务）才能正常运行。
+
+
 
 ### 1️⃣ 编辑镜像列表
 
@@ -71,6 +87,8 @@ ghcr.io/openfaas/faas:latest
 
 ---
 
+
+
 ## 📦 推送后的镜像命名规则
 
 假设 `ACR_NAMESPACE` 是 `myrepo`，以下是示例：
@@ -85,11 +103,15 @@ ghcr.io/openfaas/faas:latest
 
 ---
 
+
+
 ## 📄 License
 
 [MIT](./LICENSE)
 
 ---
+
+
 
 ## 🙌 鸣谢
 

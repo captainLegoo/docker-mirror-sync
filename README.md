@@ -8,6 +8,8 @@ Use GitHub Actions to automatically mirror public Docker images to any container
 
 ---
 
+
+
 ## ✨ Features
 
 - 📥 Automatically pull and push images from registries like DockerHub, GHCR, Quay, etc.
@@ -16,6 +18,8 @@ Use GitHub Actions to automatically mirror public Docker images to any container
 - 🧩 Compatible with any OCI-compliant image source
 
 ---
+
+
 
 ## 📁 Project Structure
 
@@ -27,7 +31,18 @@ Use GitHub Actions to automatically mirror public Docker images to any container
 └── LICENSE
 ```
 
+
+
 ## 🧾 How to Use
+
+🌀 Fork This Repository First
+Before using this workflow, you need to fork this repository to your own GitHub account or organization:
+  1. Click the Fork button (top-right corner) on GitHub
+  2. Choose your account or organization as the destination
+  3. After forking, customize images-list.txt and set GitHub Secrets in your new repo
+
+> ℹ️ You cannot trigger workflows (like scheduled sync) unless the repo is under your own namespace.
+---
 
 ### 1️⃣ Edit the Image List
 
@@ -69,6 +84,8 @@ There are three ways to trigger synchronization:
 
 ---
 
+
+
 ## 📦 Target Image Naming Rules
 
 Assuming your `ACR_NAMESPACE` is `myrepo`, images will be pushed with the following naming logic:
@@ -83,6 +100,8 @@ Assuming your `ACR_NAMESPACE` is `myrepo`, images will be pushed with the follow
 
 ---
 
+
+
 ## 📌 Notes
 
 - Ensure that the target namespace (`myrepo`) is already created in ACR
@@ -91,11 +110,15 @@ Assuming your `ACR_NAMESPACE` is `myrepo`, images will be pushed with the follow
 
 ---
 
+
+
 ## 📄 License
 
 This project is licensed under the [MIT License](./LICENSE).
 
 ---
+
+
 
 ## 🙌 Acknowledgments
 
