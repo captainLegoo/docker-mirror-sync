@@ -1,7 +1,3 @@
-jenkins/jenkins:slim-jdk21
-ollama/ollama:0.9.3
-openjdk:26-jdk-oraclelinux9
-mcp/sqlite:latest
-tomcat:9.0.106-jdk8-corretto
-mysql:latest
-mysql:9.3
+influxdb:2.7-alpine
+prom/prometheus:latest
+grafana/grafana:latest
